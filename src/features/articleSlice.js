@@ -1,5 +1,20 @@
 import { createSlice,createAsyncThunk } from '@reduxjs/toolkit'
-import {fetcharticles} from '../services/articleservice'
+import {fetcharticles, fetcharticlesPagination} from '../services/articleservice'
+
+export const getArticlesPagination = createAsyncThunk(
+    "article/getArticlesPagination",
+    async (_, thunkAPI) => {
+    const { rejectWithValue, getState } = thunkAPI;
+    const { page, limit,searchTerm } = getState().storearticles;
+    try {
+    const res = await fetcharticlesPagination (page,limit,searchTerm);
+    return res.data;
+    }
+    catch (error) {
+    return rejectWithValue(error.message);
+    }
+    }
+    );
 
 export const getArticles = createAsyncThunk(
     "article/getArticles",
@@ -29,6 +44,17 @@ export const getArticles = createAsyncThunk(
     tot:0,
     searchTerm:''
     },
+    reducers: {
+        setPage: (state,action) => {
+        state.page = action.payload;
+        },
+        setLimit: (state, action) => {
+        state.limit = action.payload;
+        },
+        setSearchTerm: (state, action) => {
+        state.searchTerm = action.payload;
+        },
+    },
     extraReducers: (builder) => {
 //get articles
     builder
@@ -46,6 +72,24 @@ export const getArticles = createAsyncThunk(
     state.error=action.payload;
     console.log("impossible de se connecter au serveur")
     })
+//Paginate
+    .addCase(getArticlesPagination.pending, (state, action) => {
+    state.isLoading=true;
+    state.error=null;
+    })
+    .addCase(getArticlesPagination.fulfilled, (state, action) => {
+    state.isLoading=false;
+    state.error = null;
+    state.articles=action.payload.products;
+    state.tot=action.payload.totalPages
+    })
+    .addCase(getArticlesPagination.rejected, (state, action) => {
+    state.isLoading=false;
+    state.error=action.payload;
+    console.log("impossible de se connecter au serveur")
+    })
+
     }
     })
 export default articleSlice.reducer;
+export const {setPage,setLimit,setSearchTerm} = articleSlice.actions;
